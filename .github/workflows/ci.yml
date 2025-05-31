@@ -14,6 +14,24 @@ jobs:
       matrix:
         node-version: [18.x]
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: capstone_project_test
+          MYSQL_USER: dev
+          MYSQL_PASSWORD: dev
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      redis:
+        image: redis:6
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
     steps:
     - uses: actions/checkout@v3
 
@@ -28,6 +46,16 @@ jobs:
 
     - name: Run tests
       run: npm test
+      env:
+        NODE_ENV: test
+        DB_HOST: localhost
+        DB_PORT: 3306
+        DB_USER: dev
+        DB_PASSWORD: dev
+        DB_NAME: capstone_project_test
+        JWT_SECRET: test-secret
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
 
     - name: Build
       run: npm run build 

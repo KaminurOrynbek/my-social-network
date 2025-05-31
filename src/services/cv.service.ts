@@ -2,9 +2,17 @@ import { User } from '../models/user.model'
 import { Experience } from '../models/experience.model'
 import { Project } from '../models/project.model'
 import { Feedback } from '../models/feedback.model'
+import { cacheService } from './cache.service'
 
 export class CvService {
   async getCv(userId: string) {
+    // Check cache first
+    const cacheKey = `cv:${userId}`
+    const cachedCv = await cacheService.get(cacheKey)
+    if (cachedCv) {
+      return JSON.parse(cachedCv)
+    }
+
     // Find user
     const user = await User.findByPk(userId, {
       attributes: ['id', 'firstName', 'lastName', 'title', 'image', 'summary', 'email'],
@@ -32,20 +40,11 @@ export class CvService {
     // Get feedbacks (where toUser = userId)
     const feedbacks = await Feedback.findAll({
       where: { toUser: userId },
-      attributes: ['id', 'fromUser', 'companyName', 'toUser', 'content'],
+      attributes: ['id', 'fromUser', 'companyName', 'toUser', 'context'],
       order: [['id', 'DESC']],
     })
 
-    // Map feedbacks to match the required field name "context"
-    const feedbacksMapped = feedbacks.map(fb => ({
-      id: fb.id,
-      fromUser: fb.fromUser,
-      companyName: fb.companyName,
-      toUser: fb.toUser,
-      context: fb.content,
-    }))
-
-    return {
+    const result = {
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -55,7 +54,10 @@ export class CvService {
       email: user.email,
       experiences,
       projects,
-      feedbacks: feedbacksMapped,
+      feedbacks,
     }
+
+    await cacheService.set(cacheKey, JSON.stringify(result), 600)
+    return result
   }
 }

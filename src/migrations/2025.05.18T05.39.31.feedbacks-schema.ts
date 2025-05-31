@@ -18,7 +18,7 @@ export const up: MigrationFn<Sequelize> = async ({ context }) => {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
-    content: {
+    context: {
       type: DataTypes.TEXT,
       allowNull: false,
     },

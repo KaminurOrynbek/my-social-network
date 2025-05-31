@@ -1,22 +1,35 @@
 import { Feedback } from '../models/feedback.model';
+import { cacheService } from './cache.service';
 
 export class FeedbackService {
   async create(data: any, currentUser: any) {
-    const required = ['fromUser', 'toUser', 'companyName', 'content'];
-    for (const field of required) {
-      if (!data[field]) throw new Error(`Validation failed: ${field} is required`);
+  const required = ['fromUser', 'toUser', 'companyName', 'context'];
+  for (const field of required) {
+    if (!data[field]) {
+      const err: any = new Error(`Validation failed: ${field} is required`);
+      err.status = 400;
+      throw err;
     }
-    // User cannot leave feedback for himself
-    if (data.fromUser === data.toUser) {
-      throw new Error('You cannot leave feedback for yourself');
-    }
-    // User cannot leave feedback on behalf of another user (unless Admin)
-    if (currentUser.role !== 'Admin' && data.fromUser !== currentUser.id) {
-      throw new Error('You cannot leave feedback on behalf of another user');
-    }
-    const feedback = await Feedback.create(data);
-    return feedback;
   }
+  // User cannot leave feedback for himself
+  if (data.fromUser === data.toUser) {
+    const err: any = new Error('You cannot leave feedback for yourself');
+    err.status = 400;
+    throw err;
+  }
+  // User cannot leave feedback on behalf of another user (unless Admin)
+  if (currentUser.role !== 'Admin' && data.fromUser !== currentUser.id) {
+    const err: any = new Error('You cannot leave feedback on behalf of another user');
+    err.status = 403;
+    throw err;
+  }
+  const feedback = await Feedback.create(data);
+
+  // Invalidate CV cache for the recipient
+  await cacheService.del(`cv:${feedback.toUser}`);
+
+  return feedback;
+}
 
   async list(query: any) {
     const pageSize = Number(query.pageSize) || 10;
@@ -61,6 +74,10 @@ export class FeedbackService {
     }
     Object.assign(feedback, data);
     await feedback.save();
+
+    // Invalidate CV cache for the recipient
+    await cacheService.del(`cv:${feedback.toUser}`);
+
     return feedback;
   }
 
@@ -76,6 +93,10 @@ export class FeedbackService {
       err.status = 403;
       throw err;
     }
+    const toUser = feedback.toUser;
     await feedback.destroy();
+
+    // Invalidate CV cache for the recipient
+    await cacheService.del(`cv:${toUser}`);
   }
 }

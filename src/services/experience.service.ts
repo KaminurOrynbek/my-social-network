@@ -1,13 +1,28 @@
 import { Experience } from '../models/experience.model';
+import { cacheService } from './cache.service';
 
 export class ExperienceService {
   async create(data: any) {
-    const required = ['userId', 'companyName', 'role', 'startDate', 'endDate', 'description'];
-    for (const field of required) {
-      if (!data[field]) throw new Error(`Validation failed: ${field} is required`);
+    try {
+      // Convert dates to proper format if they're strings
+      const experienceData = { ...data };
+      if (typeof experienceData.startDate === 'string') {
+        experienceData.startDate = new Date(experienceData.startDate);
+      }
+      if (typeof experienceData.endDate === 'string') {
+        experienceData.endDate = new Date(experienceData.endDate);
+      }
+
+      const experience = await Experience.create(experienceData);
+
+      // Invalidate CV cache for the user
+      await cacheService.del(`cv:${experience.userId}`);
+
+      return experience;
+    } catch (error: any) {
+      console.error('Error creating experience:', error);
+      throw new Error(`Failed to create experience: ${error.message}`);
     }
-    const experience = await Experience.create(data);
-    return experience;
   }
 
   async list(query: any) {
@@ -46,6 +61,10 @@ export class ExperienceService {
     }
     Object.assign(experience, data);
     await experience.save();
+
+    // Invalidate CV cache for the user
+    await cacheService.del(`cv:${experience.userId}`);
+
     return experience;
   }
 
@@ -61,6 +80,10 @@ export class ExperienceService {
       err.status = 403;
       throw err;
     }
+    const userId = experience.userId;
     await experience.destroy();
+
+    // Invalidate CV cache for the user
+    await cacheService.del(`cv:${userId}`);
   }
 }

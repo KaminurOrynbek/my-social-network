@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
+import { cacheService } from './cache.service';
 
 export class UsersService {
   async createUser(data: any, file?: Express.Multer.File) {
@@ -51,16 +52,33 @@ export class UsersService {
       image: imagePath,
     });
 
-    // Remove password from response
+    // Invalidate user list cache
+    await cacheService.delPattern('users:list:*');
+
+    // Return only specified fields
     const userObj = user.toJSON();
-    delete userObj.password;
-    return userObj;
+    return {
+      id: userObj.id,
+      firstName: userObj.firstName,
+      lastName: userObj.lastName,
+      title: userObj.title,
+      summary: userObj.summary,
+      email: userObj.email,
+      password: userObj.password,
+      role: userObj.role
+    };
   }
 
   async listUsers(query: any) {
     const pageSize = Number(query.pageSize) || 10;
     const page = Number(query.page) || 1;
     const offset = (page - 1) * pageSize;
+    const cacheKey = `users:list:page=${page}&pageSize=${pageSize}`;
+
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
 
     const { rows: users, count: total } = await User.findAndCountAll({
       limit: pageSize,
@@ -69,10 +87,18 @@ export class UsersService {
       order: [['id', 'ASC']],
     });
 
-    return { users, total };
+    const result = { users, total };
+    await cacheService.set(cacheKey, JSON.stringify(result), 600);
+    return result;
   }
 
   async getUserById(id: string) {
+    const cacheKey = `users:get:${id}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
     const user = await User.findByPk(id, {
       attributes: ['id', 'firstName', 'lastName', 'title', 'summary', 'email', 'password', 'role'],
     });
@@ -81,6 +107,8 @@ export class UsersService {
       err.status = 404;
       throw err;
     }
+
+    await cacheService.set(cacheKey, JSON.stringify(user), 600);
     return user;
   }
 
@@ -118,13 +146,25 @@ export class UsersService {
 
     await user.save();
 
-    // Remove password from response
+    // Invalidate user cache and user list cache
+    await cacheService.del(`users:get:${id}`);
+    await cacheService.delPattern('users:list:*');
+    await cacheService.del(`cv:${id}`);
+
+    // Return only specified fields
     const userObj = user.toJSON();
-    delete userObj.password;
-    return userObj;
+    return {
+      id: userObj.id,
+      firstName: userObj.firstName,
+      lastName: userObj.lastName,
+      title: userObj.title,
+      summary: userObj.summary,
+      email: userObj.email,
+      role: userObj.role
+    };
   }
 
-  async deleteUser(id: string) {
+  async deleteUser(id: string): Promise<void> {
     const user = await User.findByPk(id);
     if (!user) {
       const err: any = new Error('User not found');
@@ -132,5 +172,10 @@ export class UsersService {
       throw err;
     }
     await user.destroy();
+
+    // Invalidate user cache and user list cache
+    await cacheService.del(`users:get:${id}`);
+    await cacheService.delPattern('users:list:*');
+    await cacheService.del(`cv:${id}`);
   }
 }

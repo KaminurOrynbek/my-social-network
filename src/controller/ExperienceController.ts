@@ -1,55 +1,113 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { ExperienceService } from '../services/experience.service';
 import { UserRole } from '../models/user.model';
 
 export class ExperienceController {
   private service = new ExperienceService();
 
-  create = async (req: Request, res: Response) => {
+  create = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const currentUser = (req as any).user;
+      if (!currentUser || !currentUser.id) {
+        const err = new Error('User not authenticated');
+        (err as any).status = 401;
+        throw err;
+      }
+
+      // Check if user is Admin or if they're creating experience for themselves
+      if (currentUser.role !== 'Admin' && currentUser.id !== req.body.userId) {
+        const err = new Error('You can only create experience for yourself');
+        (err as any).status = 403;
+        throw err;
+      }
+
       const experience = await this.service.create(req.body);
-      res.status(201).json(experience);
+
+      const response = {
+        id: experience.id,
+        userId: experience.userId,
+        companyName: experience.companyName,
+        role: experience.role,
+        startDate: experience.startDate,
+        endDate: experience.endDate,
+        description: experience.description
+      };
+      
+      res.status(201).json(response);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      next(err);
     }
   };
 
-  list = async (req: Request, res: Response) => {
+  list = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { experiences, total } = await this.service.list(req.query);
+      
+      const formattedExperiences = experiences.map(experience => ({
+        id: experience.id,
+        userId: experience.userId,
+        companyName: experience.companyName,
+        role: experience.role,
+        startDate: experience.startDate,
+        endDate: experience.endDate,
+        description: experience.description
+      }));
+
       res.set('X-total-count', total.toString());
-      res.json(experiences);
+      res.json(formattedExperiences);
     } catch (err: any) {
-      res.status(400).json({ error: err.message });
+      next(err);
     }
   };
 
-  getById = async (req: Request, res: Response) => {
+  getById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const experience = await this.service.getById(req.params.id);
-      res.json(experience);
+      
+      const response = {
+        id: experience.id,
+        userId: experience.userId,
+        companyName: experience.companyName,
+        role: experience.role,
+        startDate: experience.startDate,
+        endDate: experience.endDate,
+        description: experience.description
+      };
+      
+      res.status(200).json(response);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      next(err);
     }
   };
 
-  update = async (req: Request, res: Response) => {
+  update = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const currentUser = (req as any).user;
       const experience = await this.service.update(req.params.id, req.body, currentUser);
-      res.json(experience);
+      
+      const response = {
+        id: experience.id,
+        userId: experience.userId,
+        companyName: experience.companyName,
+        role: experience.role,
+        startDate: experience.startDate,
+        endDate: experience.endDate,
+        description: experience.description
+      };
+      
+      res.status(200).json(response);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      next(err);
     }
   };
 
-  delete = async (req: Request, res: Response) => {
+  delete = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const currentUser = (req as any).user;
       await this.service.delete(req.params.id, currentUser);
       res.status(204).send();
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      next(err);
     }
   };
 }

@@ -1,4 +1,3 @@
-// scripts/createAdmin.ts
 import 'dotenv/config';
 import { loadSequelize } from '../src/loaders/sequelize';
 import { config } from '../src/config';

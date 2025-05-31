@@ -3,7 +3,6 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es6",
-    "lib": ["esnext"],
     "noImplicitAny": true,
     "moduleResolution": "node",
     "sourceMap": true,
@@ -13,5 +12,5 @@
       "*": ["node_modules/*"]
     }
   },
-  "include": ["src", "scripts"]
+  "include": ["src/**/*"]
 }

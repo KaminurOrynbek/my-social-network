@@ -1,41 +1,40 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { UsersService } from '../services/users.service';
 import { UserRole } from '../models/user.model';
 
 export class UsersController {
   private usersService = new UsersService();
 
-  createUser = async (req: Request, res: Response) => {
+  createUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await this.usersService.createUser(req.body, req.file);
       res.status(201).json(user);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      next(err);
     }
   };
 
-  listUsers = async (req: Request, res: Response) => {
+  listUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { users, total } = await this.usersService.listUsers(req.query);
       res.set('X-total-count', total.toString());
       res.json(users);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      next(err);
     }
   };
 
-  getUserById = async (req: Request, res: Response) => {
+  getUserById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await this.usersService.getUserById(req.params.id);
       res.json(user);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      next(err);
     }
   };
 
-  updateUser = async (req: Request, res: Response) => {
+  updateUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Only owner or admin can update
       const userId = req.params.id;
       const currentUser = (req as any).user;
       if (currentUser.id !== Number(userId) && currentUser.role !== UserRole.Admin) {
@@ -44,13 +43,12 @@ export class UsersController {
       const user = await this.usersService.updateUser(userId, req.body, req.file);
       res.json(user);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      next(err);
     }
   };
 
-  deleteUser = async (req: Request, res: Response) => {
+  deleteUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Only owner or admin can delete
       const userId = req.params.id;
       const currentUser = (req as any).user;
       if (currentUser.id !== Number(userId) && currentUser.role !== UserRole.Admin) {
@@ -59,7 +57,7 @@ export class UsersController {
       await this.usersService.deleteUser(userId);
       res.status(204).send();
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+      next(err);
     }
   };
 }

@@ -10,7 +10,7 @@ const sequelize = new Sequelize({
 
 export const migrator = new Umzug({
   migrations: {
-    glob: ['./migrations/*.ts', { cwd: __dirname }],
+    glob: ['./src/migrations/*.ts', { cwd: __dirname }],
   },
   context: sequelize,
   storage: new SequelizeStorage({

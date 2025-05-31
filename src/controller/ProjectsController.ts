@@ -1,55 +1,87 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import { ProjectsService } from '../services/projects.service'
 
 export class ProjectsController {
   private service = new ProjectsService()
 
-  create = async (req: Request, res: Response) => {
+  create = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const currentUser = (req as any).user
       const project = await this.service.create(req.body, req.file, currentUser)
-      res.status(201).json(project)
+      
+      const response = {
+        id: project.id,
+        userId: project.userId,
+        image: project.image,
+        description: project.description
+      }
+      
+      res.status(201).json(response)
     } catch (err: any) {
-      res.status(400).json({ error: err.message })
+      next(err)
     }
   }
 
-  list = async (req: Request, res: Response) => {
+  list = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { projects, total } = await this.service.list(req.query)
+      
+      const formattedProjects = projects.map(project => ({
+        id: project.id,
+        userId: project.userId,
+        image: project.image,
+        description: project.description
+      }))
+      
       res.set('X-total-count', total.toString())
-      res.json(projects)
+      res.json(formattedProjects)
     } catch (err: any) {
-      res.status(400).json({ error: err.message })
+      next(err)
     }
   }
 
-  getById = async (req: Request, res: Response) => {
+  getById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const project = await this.service.getById(req.params.id)
-      res.json(project)
+      
+      const response = {
+        id: project.id,
+        userId: project.userId,
+        image: project.image,
+        description: project.description
+      }
+      
+      res.json(response)
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message })
+      next(err)
     }
   }
 
-  update = async (req: Request, res: Response) => {
+  update = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const currentUser = (req as any).user
-      const project = await this.service.update(req.params.id, req.body, req.file, currentUser)
-      res.json(project)
+      const currentUser = (req as any).user;
+      const project = await this.service.update(req.params.id, req.body, req.file, currentUser);
+      
+      const response = {
+        id: project.id,
+        userId: project.userId,
+        image: project.image,
+        description: project.description
+      };
+      
+      res.status(200).json(response);
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message })
+      next(err)
     }
   }
 
-  delete = async (req: Request, res: Response) => {
+  delete = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const currentUser = (req as any).user
-      await this.service.delete(req.params.id, currentUser)
-      res.status(204).send()
+      const currentUser = (req as any).user;
+      await this.service.delete(req.params.id, currentUser);
+      res.status(204).send();
     } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message })
+      next(err)
     }
   }
 }

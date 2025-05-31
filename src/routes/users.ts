@@ -4,6 +4,7 @@ import { roles } from '../middleware/roles';
 import { UserRole } from '../models/user.model';
 import { upload } from '../middleware/uploadMiddleware';
 import { UsersController } from '../controller/UsersController';
+import { validateUserCreate, validateUserIdParam, validateUserListQuery, handleValidation } from '../middleware/validators';
 
 const router = Router();
 const controller = new UsersController();
@@ -14,6 +15,8 @@ router.post(
   authenticate,
   roles([UserRole.Admin]),
   upload.single('image'),
+  validateUserCreate,
+  handleValidation,
   controller.createUser
 );
 
@@ -22,17 +25,25 @@ router.get(
   '/',
   authenticate,
   roles([UserRole.Admin]),
+  validateUserListQuery,
+  handleValidation,
   controller.listUsers
 );
 
 // Anyone: Get user by ID
-router.get('/:id', controller.getUserById);
+router.get('/:id',
+  validateUserIdParam,
+  handleValidation, 
+  controller.getUserById
+);
 
 // Owner or Admin: Update user
 router.put(
   '/:id',
   authenticate,
   upload.single('image'),
+  validateUserIdParam,
+  handleValidation,
   controller.updateUser
 );
 
@@ -40,6 +51,8 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
+  validateUserIdParam,
+  handleValidation, 
   controller.deleteUser
 );
 

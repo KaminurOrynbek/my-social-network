@@ -51,7 +51,8 @@ export class User extends Model<UserAttributes, Optional<UserAttributes, 'id'>> 
       },
       image: {
         type: new DataTypes.STRING(256),
-        allowNull: false,
+        allowNull: true,
+        defaultValue: '/uploads/default-avatar.png'
       },
       title: {
         type: new DataTypes.STRING(256),

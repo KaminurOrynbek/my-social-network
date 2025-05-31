@@ -2,6 +2,7 @@ import { Project } from '../models/project.model'
 import path from 'path'
 import fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
+import { cacheService } from './cache.service'
 
 export class ProjectsService {
   async create(data: any, file?: Express.Multer.File, currentUser?: any) {
@@ -11,7 +12,9 @@ export class ProjectsService {
     }
     // Only Admin or the user himself can create for userId
     if (currentUser.role !== 'Admin' && Number(data.userId) !== currentUser.id) {
-      throw new Error('You cannot create a project for another user')
+      const err: any = new Error('You cannot create a project for another user');
+      err.status = 403;
+      throw err;
     }
     let imagePath = '/uploads/default-project.png'
     if (file) {
@@ -28,6 +31,10 @@ export class ProjectsService {
       image: imagePath,
       description: data.description,
     })
+
+    // Invalidate CV cache for the user
+    await cacheService.del(`cv:${project.userId}`)
+
     return project
   }
 
@@ -76,6 +83,10 @@ export class ProjectsService {
     }
     if (data.description !== undefined) project.description = data.description
     await project.save()
+
+    // Invalidate CV cache for the user
+    await cacheService.del(`cv:${project.userId}`)
+
     return project
   }
 
@@ -91,6 +102,10 @@ export class ProjectsService {
       err.status = 403
       throw err
     }
+    const userId = project.userId
     await project.destroy()
+
+    // Invalidate CV cache for the user
+    await cacheService.del(`cv:${userId}`)
   }
 }

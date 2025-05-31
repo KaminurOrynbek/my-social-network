@@ -1,7 +1,7 @@
 import { Umzug, SequelizeStorage } from 'umzug';
 import { Sequelize } from 'sequelize';
 import {config} from './config';
-
+import path from 'path';
 
 const sequelize = new Sequelize({
   dialect: 'mysql',
@@ -10,7 +10,7 @@ const sequelize = new Sequelize({
 
 export const migrator = new Umzug({
   migrations: {
-    glob: ['./src/migrations/*.ts', { cwd: __dirname }],
+    glob: ['migrations/*.ts', { cwd: path.join(__dirname, '..') }],
   },
   context: sequelize,
   storage: new SequelizeStorage({

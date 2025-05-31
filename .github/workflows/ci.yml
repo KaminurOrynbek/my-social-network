@@ -46,9 +46,9 @@ jobs:
 
     - name: Set up test database
       run: |
-        mysql -h localhost -u root -proot -e "CREATE DATABASE IF NOT EXISTS capstone_project_test;"
-        mysql -h localhost -u root -proot -e "GRANT ALL PRIVILEGES ON capstone_project_test.* TO 'dev'@'%';"
-        mysql -h localhost -u root -proot -e "FLUSH PRIVILEGES;"
+        mysql --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS capstone_project_test;"
+        mysql --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot -e "GRANT ALL PRIVILEGES ON capstone_project_test.* TO 'dev'@'%';"
+        mysql --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot -e "FLUSH PRIVILEGES;"
 
     - name: Run migrations
       run: npm run migrations:dev:up
@@ -65,7 +65,7 @@ jobs:
 
     - name: Copy schema to test database
       run: |
-        mysqldump -h localhost -u root -proot capstone_project | mysql -h localhost -u root -proot capstone_project_test
+        mysqldump --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot capstone_project | mysql --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot capstone_project_test
 
     - name: Run tests
       run: npm test

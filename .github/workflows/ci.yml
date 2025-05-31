@@ -18,7 +18,7 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_DATABASE: capstone_project_test
+          MYSQL_DATABASE: capstone_project
           MYSQL_USER: dev
           MYSQL_PASSWORD: dev
           MYSQL_ROOT_PASSWORD: root
@@ -47,12 +47,12 @@ jobs:
     - name: Run migrations
       run: npm run migrations:dev:up
       env:
-        NODE_ENV: test
+        NODE_ENV: development
         DB_HOST: localhost
         DB_PORT: 3306
         DB_USER: dev
         DB_PASSWORD: dev
-        DB_NAME: capstone_project_test
+        DB_NAME: capstone_project
         JWT_SECRET: test-secret
         REDIS_HOST: localhost
         REDIS_PORT: 6379

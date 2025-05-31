@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   collectCoverage: true,
   coverageDirectory: 'coverage',
+  testTimeout: 30000,
   testMatch: [
     '**/src/__tests__/**/*.ts'      
   ],

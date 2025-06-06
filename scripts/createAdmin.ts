@@ -10,9 +10,9 @@ async function createAdmin() {
 
   User.defineSchema(sequelize);
 
-  const passwordHash = await bcrypt.hash('парольАдмина', 10);
+  const passwordHash = await bcrypt.hash('adminpassword', 10);
   await User.create({
-    email: 'admin@example.com',
+    email: 'admin2@example.com',
     password: passwordHash,
     role: UserRole.Admin,
     firstName: 'Admin',
@@ -22,11 +22,11 @@ async function createAdmin() {
     image: '/uploads/default-avatar.png',
   });
 
-  console.log('✅ Admin created');
+  console.log('Admin created');
   process.exit(0);
 }
 
 createAdmin().catch((err) => {
-  console.error('❌ Error creating admin:', err);
+  console.error('Error creating admin:', err);
   process.exit(1);
 });

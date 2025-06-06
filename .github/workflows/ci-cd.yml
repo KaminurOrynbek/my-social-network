@@ -9,11 +9,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x]
-
     services:
       mysql:
         image: mysql:8.0
@@ -25,7 +23,6 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
       redis:
         image: redis:6
         ports:
@@ -34,22 +31,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-
     - name: Install dependencies
       run: npm ci
-
     - name: Set up test database
       run: |
         mysql --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS capstone_project_test;"
         mysql --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot -e "GRANT ALL PRIVILEGES ON capstone_project_test.* TO 'dev'@'%';"
         mysql --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot -e "FLUSH PRIVILEGES;"
-
     - name: Run migrations
       run: npm run migrations:dev:up
       env:
@@ -62,11 +55,9 @@ jobs:
         JWT_SECRET: test-secret
         REDIS_HOST: localhost
         REDIS_PORT: 6379
-
     - name: Copy schema to test database
       run: |
         mysqldump --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot capstone_project | mysql --protocol=tcp -h 127.0.0.1 -P 3306 -u root -proot capstone_project_test
-
     - name: Run tests
       run: npm test
       env:
@@ -79,11 +70,10 @@ jobs:
         JWT_SECRET: test-secret
         REDIS_HOST: localhost
         REDIS_PORT: 6379
-
     - name: Build
       run: npm run build
 
-deploy:
+  deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
